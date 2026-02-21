@@ -1,12 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-client";
 
 export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [session, setSession] = useState<any>(null);
+
+  // Ambil session saat component mount
+  useEffect(() => {
+    const fetchSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Session error:", error.message);
+        return;
+      }
+      setSession(data.session);
+    };
+    fetchSession();
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -21,13 +35,24 @@ export default function UploadForm() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch("/api/admin/parse-pdf", {
+    const res = await fetch("/api/admin/pdf-parse", {
       method: "POST",
+      headers: {
+        Authorization: `Bearer ${session?.access_token}`,
+      },
       body: formData,
     });
 
-    const data = await res.json();
-    setResult(data);
+    const text = await res.text();
+
+    try {
+      const data = JSON.parse(text);
+      setResult(data);
+    } catch (err) {
+      console.error("Bukan JSON:", text);
+      alert("Server mengembalikan HTML error. Cek terminal.");
+    }
+
     setLoading(false);
   };
 
@@ -38,6 +63,7 @@ export default function UploadForm() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token}`,
       },
       body: JSON.stringify(result),
     });

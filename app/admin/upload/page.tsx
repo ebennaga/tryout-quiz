@@ -27,16 +27,12 @@ export default async function AdminUploadPage() {
     redirect("/"); // belum login → ke home
   }
 
-  console.log("USER:", user);
-  console.log("USER ID:", user?.id);
   // 🔐 2️⃣ Cek role admin
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
-  console.log("profile", profile);
-  console.log("error", error);
 
   if (profile?.role !== "admin") {
     redirect("/"); // bukan admin → ke home

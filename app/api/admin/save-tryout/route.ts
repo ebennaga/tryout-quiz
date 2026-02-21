@@ -1,9 +1,26 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-session";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createSupabaseServer();
+    const authHeader = req.headers.get("authorization");
+
+    if (!authHeader) {
+      return NextResponse.json({ error: "No auth header" }, { status: 401 });
+    }
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      },
+    );
 
     // 🔐 1️⃣ Cek user login
     const {
@@ -43,7 +60,7 @@ export async function POST(req: Request) {
         title,
         description: description || null,
         duration_minutes: duration_minutes || 110,
-        is_published: false,
+        is_active: false,
         created_by: user.id,
       })
       .select()
