@@ -6,51 +6,47 @@ import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
+  const [simulasiList, setSimulasiList] = useState<any[]>([]);
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
+    const fetchData = async () => {
+      // Ambil user
+      const { data: userData } = await supabase.auth.getUser();
+      setUser(userData.user);
+
+      // Ambil tryout yang aktif + punya soal
+      const { data, error } = await supabase
+        .from("tryouts")
+        .select(
+          `
+          id,
+          title,
+          description,
+          duration_minutes,
+          questions ( id )
+        `,
+        )
+        .eq("is_active", false);
+      console.log("data", data);
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      // Filter hanya tryout yang punya minimal 1 soal
+      const filtered = data.filter((tryout) => tryout.questions.length > 0);
+
+      setSimulasiList(filtered);
+    };
+
+    fetchData();
   }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/");
   };
-
-  const simulasiList = [
-    {
-      id: 1,
-      title: "Simulasi SKD Lengkap #1",
-      description: "110 soal (TWK, TIU, TKP) dengan waktu 110 menit.",
-      difficulty: "Standar Nasional",
-    },
-    {
-      id: 2,
-      title: "Simulasi SKD Lengkap #2",
-      description: "110 soal set terbaru dengan tingkat kesulitan tinggi.",
-      difficulty: "Sulit",
-    },
-    {
-      id: 3,
-      title: "Latihan TWK",
-      description: "30 soal khusus Tes Wawasan Kebangsaan.",
-      difficulty: "Menengah",
-    },
-    {
-      id: 4,
-      title: "Latihan TIU",
-      description: "35 soal logika, numerik, dan verbal reasoning.",
-      difficulty: "Menengah",
-    },
-    {
-      id: 5,
-      title: "Latihan TKP",
-      description: "45 soal karakteristik pribadi dan studi kasus.",
-      difficulty: "Standar",
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 p-6">
@@ -76,8 +72,10 @@ export default function DashboardPage() {
         {/* Ringkasan Aktivitas */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           <div className="bg-white p-6 rounded-2xl shadow-md">
-            <h3 className="text-sm text-slate-500 mb-2">Total Latihan</h3>
-            <p className="text-3xl font-bold">12</p>
+            <h3 className="text-sm text-slate-500 mb-2">
+              Total Tryout Tersedia
+            </h3>
+            <p className="text-3xl font-bold">{simulasiList.length}</p>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-md">
@@ -107,7 +105,7 @@ export default function DashboardPage() {
 
                 <div className="flex justify-between items-center">
                   <span className="text-sm px-3 py-1 bg-blue-100 text-blue-600 rounded-full">
-                    {item.difficulty}
+                    {item.duration_minutes} menit • {item.questions.length} soal
                   </span>
 
                   <button
@@ -120,6 +118,12 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+
+          {simulasiList.length === 0 && (
+            <div className="mt-10 text-center text-slate-500">
+              Belum ada tryout tersedia.
+            </div>
+          )}
         </div>
       </div>
     </div>
