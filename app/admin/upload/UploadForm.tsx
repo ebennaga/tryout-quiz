@@ -86,16 +86,6 @@ export default function UploadForm() {
 
   return (
     <div className="space-y-4">
-      {/* 🔴 Logout Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 bg-red-600 text-white rounded"
-        >
-          Logout
-        </button>
-      </div>
-
       <input
         type="file"
         accept=".pdf"

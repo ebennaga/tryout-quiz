@@ -27,7 +27,7 @@ export default function DashboardPage() {
           questions ( id )
         `,
         )
-        .eq("is_active", false);
+        .eq("is_active", true);
 
       if (error) {
         console.error(error);
