@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       .insert({
         title,
         description: description || null,
-        duration_minutes: duration_minutes || 110,
+        duration_minutes: duration_minutes || 90,
         is_active: false,
         created_by: user.id,
       })

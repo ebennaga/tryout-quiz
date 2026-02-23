@@ -28,7 +28,7 @@ export default function DashboardPage() {
         `,
         )
         .eq("is_active", false);
-      console.log("data", data);
+
       if (error) {
         console.error(error);
         return;

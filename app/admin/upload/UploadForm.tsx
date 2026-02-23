@@ -6,10 +6,10 @@ import { supabase } from "@/lib/supabase-client";
 export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false); // 🔥 state baru
   const [result, setResult] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
 
-  // Ambil session saat component mount
   useEffect(() => {
     const fetchSession = async () => {
       const { data, error } = await supabase.auth.getSession();
@@ -59,16 +59,29 @@ export default function UploadForm() {
   const handleSave = async () => {
     if (!result) return;
 
-    await fetch("/api/admin/save-tryout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.access_token}`,
-      },
-      body: JSON.stringify(result),
-    });
+    setSaving(true); // 🔥 mulai loading save
 
-    alert("Berhasil disimpan!");
+    try {
+      const res = await fetch("/api/admin/save-tryout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify(result),
+      });
+
+      if (!res.ok) {
+        throw new Error("Gagal menyimpan data");
+      }
+
+      alert("Berhasil disimpan!");
+    } catch (err) {
+      alert("Terjadi kesalahan saat menyimpan");
+      console.error(err);
+    }
+
+    setSaving(false); // 🔥 selesai loading save
   };
 
   return (
@@ -82,6 +95,7 @@ export default function UploadForm() {
           Logout
         </button>
       </div>
+
       <input
         type="file"
         accept=".pdf"
@@ -91,7 +105,8 @@ export default function UploadForm() {
 
       <button
         onClick={handleUpload}
-        className="px-4 py-2 bg-blue-600 text-white rounded"
+        disabled={loading}
+        className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
       >
         {loading ? "Parsing..." : "Upload & Parse"}
       </button>
@@ -103,9 +118,10 @@ export default function UploadForm() {
 
           <button
             onClick={handleSave}
-            className="mt-3 px-4 py-2 bg-green-600 text-white rounded"
+            disabled={saving}
+            className="mt-3 px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
           >
-            Simpan ke Database
+            {saving ? "Menyimpan ke Database..." : "Simpan ke Database"}
           </button>
         </div>
       )}
