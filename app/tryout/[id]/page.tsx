@@ -12,6 +12,8 @@ export default function TryoutPage() {
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [duration, setDuration] = useState(90);
+  const [page, setPage] = useState(0);
+  const perPage = 20;
 
   // ================= FETCH TRYOUT + QUESTIONS =================
   useEffect(() => {
@@ -54,18 +56,18 @@ export default function TryoutPage() {
         .from("questions")
         .select(
           `
-        id,
-        question_text,
-        options (
-          id,
-          option_text,
-          label
-        )
-      `,
+    id,
+    question_text,
+    options (
+      id,
+      option_text,
+      option_label
+    )
+  `,
         )
         .eq("tryout_id", id)
         .order("created_at", { ascending: true });
-
+      console.log("QUESTIONS:", data);
       if (data) setQuestions(data);
     };
 
@@ -147,23 +149,31 @@ export default function TryoutPage() {
         <p className="mb-6">{questions[currentQuestion].question_text}</p>
 
         <div className="space-y-3">
-          {questions[currentQuestion].options.map((opt: any) => (
-            <label key={opt.id} className="flex items-center gap-2">
-              <input
-                type="radio"
-                name={`question-${questions[currentQuestion].id}`}
-                value={opt.id}
-                checked={answers[questions[currentQuestion].id] === opt.id}
-                onChange={() =>
-                  setAnswers({
-                    ...answers,
-                    [questions[currentQuestion].id]: opt.id,
-                  })
-                }
-              />
-              {opt.label}. {opt.option_text}
-            </label>
-          ))}
+          {questions[currentQuestion].options.map((opt: any, index: number) => {
+            const label =
+              opt.option_label && opt.option_label.trim() !== ""
+                ? opt.option_label
+                : String.fromCharCode(65 + index); // otomatis A B C D E
+
+            return (
+              <label key={opt.id} className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name={`question-${questions[currentQuestion].id}`}
+                  value={opt.id}
+                  checked={answers[questions[currentQuestion].id] === opt.id}
+                  onChange={() =>
+                    setAnswers({
+                      ...answers,
+                      [questions[currentQuestion].id]: opt.id,
+                    })
+                  }
+                />
+                <span className="font-semibold mr-1">{label}.</span>
+                {opt.option_text}
+              </label>
+            );
+          })}
         </div>
 
         <div className="mt-6 flex gap-4">
@@ -192,21 +202,90 @@ export default function TryoutPage() {
       </div>
 
       {/* NAVIGASI NOMOR */}
-      <div className="mt-8 flex justify-center gap-2 flex-wrap">
-        {questions.map((q, index) => {
-          const isAnswered = answers[q.id];
+
+      {/* NAVIGASI NOMOR STYLE BARU */}
+      <div className="mt-10 flex flex-col items-center gap-4">
+        {/* LEGEND */}
+        <div className="text-sm text-gray-700">
+          <span className="text-green-600 font-semibold">Hijau : Dijawab</span>
+          <span className="mx-4">,</span>
+          <span className="text-red-600 font-semibold">
+            Merah : Belum dijawab
+          </span>
+        </div>
+
+        {(() => {
+          const start = page * perPage;
+          const end = start + perPage;
+          const visibleQuestions = questions.slice(start, end);
+
           return (
-            <button
-              key={q.id}
-              onClick={() => setCurrentQuestion(index)}
-              className={`w-8 h-8 text-sm text-white ${
-                isAnswered ? "bg-green-600" : "bg-red-600"
-              }`}
-            >
-              {index + 1}
-            </button>
+            <div className="flex items-center gap-6">
+              {/* PANAH KIRI */}
+              <button
+                onClick={() => setPage((p) => (p > 0 ? p - 1 : p))}
+                className="w-10 h-10 rounded-full bg-gray-200 shadow flex items-center justify-center hover:bg-gray-300"
+              >
+                ⬅
+              </button>
+
+              {/* NOMOR */}
+              <div className="flex flex-col gap-2">
+                {/* BARIS 1 */}
+                <div className="flex gap-2 justify-center">
+                  {visibleQuestions.slice(0, 10).map((q, index) => {
+                    const realIndex = start + index;
+                    const isAnswered = answers[q.id];
+
+                    return (
+                      <button
+                        key={q.id}
+                        onClick={() => setCurrentQuestion(realIndex)}
+                        className={`w-10 h-8 text-sm text-white rounded-sm ${
+                          isAnswered ? "bg-green-600" : "bg-red-600"
+                        }`}
+                      >
+                        {realIndex + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* BARIS 2 */}
+                <div className="flex gap-2 justify-center">
+                  {visibleQuestions.slice(10, 20).map((q, index) => {
+                    const realIndex = start + index + 10;
+                    const isAnswered = answers[q.id];
+
+                    return (
+                      <button
+                        key={q.id}
+                        onClick={() => setCurrentQuestion(realIndex)}
+                        className={`w-10 h-8 text-sm text-white rounded-sm ${
+                          isAnswered ? "bg-green-600" : "bg-red-600"
+                        }`}
+                      >
+                        {realIndex + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* PANAH KANAN */}
+              <button
+                onClick={() =>
+                  setPage((p) =>
+                    (p + 1) * perPage < questions.length ? p + 1 : p,
+                  )
+                }
+                className="w-10 h-10 rounded-full bg-gray-200 shadow flex items-center justify-center hover:bg-gray-300"
+              >
+                ➡
+              </button>
+            </div>
           );
-        })}
+        })()}
       </div>
 
       {/* TIMER FIXED */}
