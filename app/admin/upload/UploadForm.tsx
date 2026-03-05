@@ -88,7 +88,7 @@ export default function UploadForm() {
     <div className="space-y-4">
       <input
         type="file"
-        accept=".pdf"
+        accept=".md"
         onChange={(e) => setFile(e.target.files?.[0] || null)}
         className="block"
       />
