@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase-client";
-import { useParams } from "next/navigation";
+import { useEffect, useRef, useState } from 'react';
+import { supabase } from '@/lib/supabase-client';
+import { useParams } from 'next/navigation';
 
 export default function TryoutPage() {
   const { id } = useParams();
@@ -13,7 +13,43 @@ export default function TryoutPage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [duration, setDuration] = useState(90);
   const [page, setPage] = useState(0);
+  const [score, setScore] = useState<any>(null);
   const perPage = 20;
+  const answersRef = useRef(answers);
+
+  // Update ref setiap kali answers berubah
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  // Ganti calculateScore pakai ref
+  const calculateScore = () => {
+    let totalScore = 0;
+    const currentAnswers = answersRef.current; // 👈 pakai ref, bukan state langsung
+
+    questions.forEach((q) => {
+      const userAnswer = currentAnswers[q.id];
+      // const selectedOption = q.options.find(
+      //   (opt: any) => opt.id === userAnswer,
+      // );
+
+      const selectedOption = q.options.find(
+        (opt: any) => String(opt.id) === String(userAnswer),
+      ); // 👈 paksa keduanya string
+
+      if (selectedOption) {
+        totalScore += Number(selectedOption.score_value) || 0;
+      }
+    });
+
+    // const nilaiSKD = ((totalScore / 550) * 40 * 100).toFixed(2);
+    const nilaiSKD = ((totalScore / 550) * 100).toFixed(2);
+
+    setScore({
+      raw: totalScore,
+      final: nilaiSKD,
+    });
+  };
 
   // ================= FETCH TRYOUT + QUESTIONS =================
   useEffect(() => {
@@ -21,9 +57,9 @@ export default function TryoutPage() {
 
     const fetchData = async () => {
       const { data: tryoutData } = await supabase
-        .from("tryouts")
-        .select("duration_minutes")
-        .eq("id", id)
+        .from('tryouts')
+        .select('duration_minutes')
+        .eq('id', id)
         .single();
 
       const durasi = tryoutData?.duration_minutes || 90;
@@ -53,7 +89,7 @@ export default function TryoutPage() {
 
       // Fetch soal
       const { data } = await supabase
-        .from("questions")
+        .from('questions')
         .select(
           `
     id,
@@ -61,13 +97,14 @@ export default function TryoutPage() {
     options (
       id,
       option_text,
-      option_label
+      option_label,
+      score_value
     )
   `,
         )
-        .eq("tryout_id", id)
-        .order("created_at", { ascending: true });
-      console.log("QUESTIONS:", data);
+        .eq('tryout_id', id)
+        .order('created_at', { ascending: true });
+
       if (data) setQuestions(data);
     };
 
@@ -87,9 +124,9 @@ export default function TryoutPage() {
   const formatTime = () => {
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
-    return `${minutes.toString().padStart(2, "0")}:${seconds
+    return `${minutes.toString().padStart(2, '0')}:${seconds
       .toString()
-      .padStart(2, "0")}`;
+      .padStart(2, '0')}`;
   };
 
   const answeredCount = Object.keys(answers).length;
@@ -133,8 +170,8 @@ export default function TryoutPage() {
           <button
             className="bg-black text-white px-4 py-2"
             onClick={() => {
+              calculateScore();
               localStorage.removeItem(`tryout_end_${id}`);
-              alert("Ujian selesai!");
             }}
           >
             Selesai Ujian
@@ -151,7 +188,7 @@ export default function TryoutPage() {
         <div className="space-y-3">
           {questions[currentQuestion].options.map((opt: any, index: number) => {
             const label =
-              opt.option_label && opt.option_label.trim() !== ""
+              opt.option_label && opt.option_label.trim() !== ''
                 ? opt.option_label
                 : String.fromCharCode(65 + index); // otomatis A B C D E
 
@@ -242,7 +279,7 @@ export default function TryoutPage() {
                         key={q.id}
                         onClick={() => setCurrentQuestion(realIndex)}
                         className={`w-10 h-8 text-sm text-white rounded-sm ${
-                          isAnswered ? "bg-green-600" : "bg-red-600"
+                          isAnswered ? 'bg-green-600' : 'bg-red-600'
                         }`}
                       >
                         {realIndex + 1}
@@ -262,7 +299,7 @@ export default function TryoutPage() {
                         key={q.id}
                         onClick={() => setCurrentQuestion(realIndex)}
                         className={`w-10 h-8 text-sm text-white rounded-sm ${
-                          isAnswered ? "bg-green-600" : "bg-red-600"
+                          isAnswered ? 'bg-green-600' : 'bg-red-600'
                         }`}
                       >
                         {realIndex + 1}
@@ -292,6 +329,28 @@ export default function TryoutPage() {
       <div className="fixed bottom-6 right-6 bg-black text-white px-6 py-3 text-2xl font-mono shadow-lg">
         {formatTime()}
       </div>
+      {score && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+          <div className="bg-white p-8 rounded shadow-lg text-center">
+            <h2 className="text-2xl font-bold mb-4">Hasil Ujian</h2>
+
+            <p className="text-lg">
+              Skor Mentah : <b>{score.raw}</b>
+            </p>
+
+            <p className="text-lg">
+              Nilai SKD : <b>{score.final}</b>
+            </p>
+
+            <button
+              className="mt-6 bg-blue-600 text-white px-6 py-2"
+              onClick={() => location.reload()}
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
