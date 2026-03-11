@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import { supabase } from '@/lib/supabase-client';
-import { useParams } from 'next/navigation';
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabase-client";
+import { useParams } from "next/navigation";
 
 export default function TryoutPage() {
   const { id } = useParams();
@@ -23,27 +23,40 @@ export default function TryoutPage() {
   }, [answers]);
 
   // Ganti calculateScore pakai ref
-  const calculateScore = () => {
+  const calculateScore = async () => {
     let totalScore = 0;
     const currentAnswers = answersRef.current; // 👈 pakai ref, bukan state langsung
 
     questions.forEach((q) => {
       const userAnswer = currentAnswers[q.id];
-      // const selectedOption = q.options.find(
-      //   (opt: any) => opt.id === userAnswer,
-      // );
 
       const selectedOption = q.options.find(
         (opt: any) => String(opt.id) === String(userAnswer),
-      ); // 👈 paksa keduanya string
+      );
 
       if (selectedOption) {
         totalScore += Number(selectedOption.score_value) || 0;
       }
     });
 
-    // const nilaiSKD = ((totalScore / 550) * 40 * 100).toFixed(2);
     const nilaiSKD = ((totalScore / 550) * 100).toFixed(2);
+
+    // 👇 Simpan ke database
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+
+    const { error } = await supabase.from("results").insert({
+      user_id: userId,
+      tryout_id: id,
+      raw_score: totalScore,
+      final_score: parseFloat(nilaiSKD),
+    });
+
+    if (error) {
+      console.error("Gagal simpan hasil:", error.message);
+    } else {
+      console.log("Hasil berhasil disimpan!");
+    }
 
     setScore({
       raw: totalScore,
@@ -57,9 +70,9 @@ export default function TryoutPage() {
 
     const fetchData = async () => {
       const { data: tryoutData } = await supabase
-        .from('tryouts')
-        .select('duration_minutes')
-        .eq('id', id)
+        .from("tryouts")
+        .select("duration_minutes")
+        .eq("id", id)
         .single();
 
       const durasi = tryoutData?.duration_minutes || 90;
@@ -89,7 +102,7 @@ export default function TryoutPage() {
 
       // Fetch soal
       const { data } = await supabase
-        .from('questions')
+        .from("questions")
         .select(
           `
     id,
@@ -102,8 +115,8 @@ export default function TryoutPage() {
     )
   `,
         )
-        .eq('tryout_id', id)
-        .order('created_at', { ascending: true });
+        .eq("tryout_id", id)
+        .order("created_at", { ascending: true });
 
       if (data) setQuestions(data);
     };
@@ -124,9 +137,9 @@ export default function TryoutPage() {
   const formatTime = () => {
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds
+    return `${minutes.toString().padStart(2, "0")}:${seconds
       .toString()
-      .padStart(2, '0')}`;
+      .padStart(2, "0")}`;
   };
 
   const answeredCount = Object.keys(answers).length;
@@ -169,8 +182,8 @@ export default function TryoutPage() {
 
           <button
             className="bg-black text-white px-4 py-2"
-            onClick={() => {
-              calculateScore();
+            onClick={async () => {
+              await calculateScore();
               localStorage.removeItem(`tryout_end_${id}`);
             }}
           >
@@ -188,7 +201,7 @@ export default function TryoutPage() {
         <div className="space-y-3">
           {questions[currentQuestion].options.map((opt: any, index: number) => {
             const label =
-              opt.option_label && opt.option_label.trim() !== ''
+              opt.option_label && opt.option_label.trim() !== ""
                 ? opt.option_label
                 : String.fromCharCode(65 + index); // otomatis A B C D E
 
@@ -279,7 +292,7 @@ export default function TryoutPage() {
                         key={q.id}
                         onClick={() => setCurrentQuestion(realIndex)}
                         className={`w-10 h-8 text-sm text-white rounded-sm ${
-                          isAnswered ? 'bg-green-600' : 'bg-red-600'
+                          isAnswered ? "bg-green-600" : "bg-red-600"
                         }`}
                       >
                         {realIndex + 1}
@@ -299,7 +312,7 @@ export default function TryoutPage() {
                         key={q.id}
                         onClick={() => setCurrentQuestion(realIndex)}
                         className={`w-10 h-8 text-sm text-white rounded-sm ${
-                          isAnswered ? 'bg-green-600' : 'bg-red-600'
+                          isAnswered ? "bg-green-600" : "bg-red-600"
                         }`}
                       >
                         {realIndex + 1}

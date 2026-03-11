@@ -61,12 +61,22 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="px-5 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition"
-          >
-            Logout
-          </button>
+          {/* 👇 Bungkus kedua button dalam satu div */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push("/dashboard/results")}
+              className="px-5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white transition"
+            >
+              Lihat Hasil Ujian
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="px-5 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* Ringkasan Aktivitas */}
