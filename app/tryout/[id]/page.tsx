@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase-client";
 import { useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function TryoutPage() {
   const { id } = useParams();
-
+  const router = useRouter();
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
@@ -41,6 +42,25 @@ export default function TryoutPage() {
 
     const nilaiSKD = ((totalScore / 550) * 100).toFixed(2);
 
+    // 👇 Siapkan data jawaban lengkap per soal
+    const answersData = questions.map((q) => {
+      const userAnswerId = currentAnswers[q.id];
+      const selectedOption = q.options.find(
+        (opt: any) => String(opt.id) === String(userAnswerId),
+      );
+      const correctOption = q.options.find((opt: any) => opt.score_value === 5);
+
+      return {
+        question_id: q.id,
+        question_text: q.question_text,
+        user_answer_id: userAnswerId || null,
+        user_answer_text: selectedOption?.option_text || null,
+        correct_answer_text: correctOption?.option_text || null,
+        is_correct: selectedOption?.score_value === 5,
+        score_value: selectedOption?.score_value || 0,
+      };
+    });
+
     // 👇 Simpan ke database
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData.session?.user?.id;
@@ -50,6 +70,7 @@ export default function TryoutPage() {
       tryout_id: id,
       raw_score: totalScore,
       final_score: parseFloat(nilaiSKD),
+      answers: answersData,
     });
 
     if (error) {
@@ -357,7 +378,7 @@ export default function TryoutPage() {
 
             <button
               className="mt-6 bg-blue-600 text-white px-6 py-2"
-              onClick={() => location.reload()}
+              onClick={() => router.push("/dashboard")}
             >
               Tutup
             </button>
