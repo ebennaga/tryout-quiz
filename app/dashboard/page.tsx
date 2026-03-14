@@ -14,6 +14,8 @@ export default function DashboardPage() {
   const [deducting, setDeducting] = useState(false);
   const router = useRouter();
 
+  const TRYOUT_COST = 2;
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: userData } = await supabase.auth.getUser();
@@ -21,7 +23,6 @@ export default function DashboardPage() {
       setUserId(userData.user?.id || null);
 
       if (userData.user) {
-        // Fetch kredit
         const { data: creditData } = await supabase
           .from("user_credits")
           .select("balance")
@@ -30,7 +31,6 @@ export default function DashboardPage() {
         setCredits(creditData?.balance || 0);
       }
 
-      // Fetch tryout aktif
       const { data, error } = await supabase
         .from("tryouts")
         .select(`id, title, description, duration_minutes, questions ( id )`)
@@ -61,7 +61,7 @@ export default function DashboardPage() {
   const handleConfirm = async () => {
     if (!userId || !selectedTryout) return;
 
-    if (credits < 1) {
+    if (credits < TRYOUT_COST) {
       setShowModal(false);
       router.push("/dashboard/credits");
       return;
@@ -69,10 +69,12 @@ export default function DashboardPage() {
 
     setDeducting(true);
 
-    // Potong 1 kredit
     const { error: updateError } = await supabase
       .from("user_credits")
-      .update({ balance: credits - 1, updated_at: new Date().toISOString() })
+      .update({
+        balance: credits - TRYOUT_COST,
+        updated_at: new Date().toISOString(),
+      })
       .eq("user_id", userId);
 
     if (updateError) {
@@ -81,15 +83,14 @@ export default function DashboardPage() {
       return;
     }
 
-    // Catat transaksi
     await supabase.from("credit_transactions").insert({
       user_id: userId,
-      amount: -1,
+      amount: -TRYOUT_COST,
       type: "debit",
       description: `Akses Tryout: ${selectedTryout.title}`,
     });
 
-    setCredits((prev) => prev - 1);
+    setCredits((prev) => prev - TRYOUT_COST);
     setDeducting(false);
     setShowModal(false);
     router.push(`/tryout/${selectedTryout.id}`);
@@ -109,7 +110,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Saldo kredit */}
             <div
               className="bg-white px-4 py-2 rounded-xl shadow-md cursor-pointer hover:shadow-lg transition text-center"
               onClick={() => router.push("/dashboard/credits")}
@@ -134,7 +134,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Ringkasan Aktivitas */}
+        {/* Ringkasan */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           <div className="bg-white p-6 rounded-2xl shadow-md">
             <h3 className="text-sm text-slate-500 mb-2">
@@ -142,12 +142,10 @@ export default function DashboardPage() {
             </h3>
             <p className="text-3xl font-bold">{simulasiList.length}</p>
           </div>
-
           <div className="bg-white p-6 rounded-2xl shadow-md">
             <h3 className="text-sm text-slate-500 mb-2">Skor Tertinggi</h3>
             <p className="text-3xl font-bold text-blue-600">410</p>
           </div>
-
           <div className="bg-white p-6 rounded-2xl shadow-md">
             <h3 className="text-sm text-slate-500 mb-2">Peringkat Nasional</h3>
             <p className="text-3xl font-bold text-green-600">#245</p>
@@ -157,7 +155,6 @@ export default function DashboardPage() {
         {/* Pilihan Simulasi */}
         <div>
           <h2 className="text-2xl font-semibold mb-6">Pilih Simulasi Tryout</h2>
-
           <div className="grid md:grid-cols-2 gap-6">
             {simulasiList.map((item) => (
               <div
@@ -166,12 +163,16 @@ export default function DashboardPage() {
               >
                 <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
                 <p className="text-slate-600 mb-4">{item.description}</p>
-
                 <div className="flex justify-between items-center">
-                  <span className="text-sm px-3 py-1 bg-blue-100 text-blue-600 rounded-full">
-                    {item.duration_minutes} menit • {item.questions.length} soal
-                  </span>
-
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm px-3 py-1 bg-blue-100 text-blue-600 rounded-full">
+                      {item.duration_minutes} menit • {item.questions.length}{" "}
+                      soal
+                    </span>
+                    <span className="text-sm px-3 py-1 bg-violet-100 text-violet-600 rounded-full">
+                      {TRYOUT_COST} kredit
+                    </span>
+                  </div>
                   <button
                     onClick={() => handleMulaiClick(item)}
                     className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition"
@@ -218,25 +219,34 @@ export default function DashboardPage() {
 
             {/* Info kredit */}
             <div
-              className={`rounded-xl p-4 mb-6 border ${credits >= 1 ? "bg-violet-50 border-violet-100" : "bg-red-50 border-red-100"}`}
+              className={`rounded-xl p-4 mb-6 border ${credits >= TRYOUT_COST ? "bg-violet-50 border-violet-100" : "bg-red-50 border-red-100"}`}
             >
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-slate-600">
                   Biaya Kredit
                 </span>
-                <span className="font-bold text-violet-600">1 kredit</span>
+                <span className="font-bold text-violet-600">
+                  {TRYOUT_COST} kredit
+                </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-slate-500">Saldo kamu</span>
                 <span
-                  className={`font-bold ${credits >= 1 ? "text-green-600" : "text-red-500"}`}
+                  className={`font-bold ${credits >= TRYOUT_COST ? "text-green-600" : "text-red-500"}`}
                 >
                   {credits} kredit
                 </span>
               </div>
-              {credits < 1 && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-500">Sisa setelah</span>
+                <span className="text-sm font-medium text-slate-600">
+                  {Math.max(credits - TRYOUT_COST, 0)} kredit
+                </span>
+              </div>
+              {credits < TRYOUT_COST && (
                 <p className="text-xs text-red-500 mt-2">
-                  ⚠️ Kredit tidak cukup. Beli kredit terlebih dahulu.
+                  ⚠️ Kredit tidak cukup. Minimal {TRYOUT_COST} kredit untuk
+                  mulai tryout.
                 </p>
               )}
             </div>
@@ -249,13 +259,15 @@ export default function DashboardPage() {
                 Batal
               </button>
 
-              {credits >= 1 ? (
+              {credits >= TRYOUT_COST ? (
                 <button
                   onClick={handleConfirm}
                   disabled={deducting}
                   className="flex-[2] py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition disabled:opacity-50"
                 >
-                  {deducting ? "Memproses..." : "✓ Mulai — 1 Kredit"}
+                  {deducting
+                    ? "Memproses..."
+                    : `✓ Mulai — ${TRYOUT_COST} Kredit`}
                 </button>
               ) : (
                 <button

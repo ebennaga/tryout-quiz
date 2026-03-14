@@ -6,41 +6,41 @@ import { useRouter } from "next/navigation";
 
 const PACKAGES = [
   {
-    id: "starter",
-    name: "Starter",
+    id: "coba",
+    name: "Coba Dulu",
     emoji: "⚡",
-    credits: 10,
-    bonus: 2,
-    price: 15000,
-    desc: "Coba pembahasan AI untuk pertama kali",
-  },
-  {
-    id: "basic",
-    name: "Basic",
-    emoji: "⭐",
-    credits: 30,
+    credits: 5,
     bonus: 5,
-    price: 35000,
+    price: 20000,
+    desc: "10 kredit — cukup untuk 3 sesi tryout + AI",
+  },
+  {
+    id: "juara",
+    name: "Juara",
+    emoji: "⭐",
+    credits: 25,
+    bonus: 10,
+    price: 50000,
     best: true,
-    desc: "Paling populer untuk persiapan intensif",
+    desc: "35 kredit — 11 sesi tryout + AI, ideal 1 bulan",
   },
   {
-    id: "pro",
-    name: "Pro",
+    id: "serius",
+    name: "Serius",
     emoji: "💎",
-    credits: 75,
-    bonus: 15,
-    price: 75000,
-    desc: "Untuk kamu yang serius lulus CPNS",
+    credits: 60,
+    bonus: 20,
+    price: 90000,
+    desc: "80 kredit — 26 sesi tryout + AI, persiapan 2-3 bulan",
   },
   {
-    id: "ultimate",
-    name: "Ultimate",
+    id: "dominasi",
+    name: "Dominasi",
     emoji: "🚀",
-    credits: 150,
-    bonus: 35,
-    price: 130000,
-    desc: "Latihan tak terbatas, skor tertinggi",
+    credits: 130,
+    bonus: 50,
+    price: 150000,
+    desc: "180 kredit — 60 sesi tryout + AI, latihan maksimal",
   },
 ];
 
@@ -48,7 +48,7 @@ const BANK_INFO = {
   bank: "BCA",
   norek: "73902214",
   nama: "Benski",
-  whatsapp: "+6281314180047",
+  whatsapp: "089515386867",
 };
 
 type Step = "list" | "detail" | "confirm";
@@ -91,10 +91,12 @@ export default function CreditsPage() {
   const handleSendWA = () => {
     if (!selectedPkg || !user) return;
     const total = selectedPkg.credits + selectedPkg.bonus;
+    const sessions = Math.floor(total / 3);
     const message = encodeURIComponent(
       `Halo Admin, saya ingin membeli kredit CPNS Tryout.\n\n` +
         `📦 Paket: ${selectedPkg.name}\n` +
         `💎 Kredit: ${selectedPkg.credits} + ${selectedPkg.bonus} bonus = ${total} kredit\n` +
+        `🎯 Setara: ${sessions} sesi tryout + pembahasan AI\n` +
         `💰 Nominal: ${formatPrice(selectedPkg.price)}\n` +
         `📧 Email: ${user?.email}\n\n` +
         `Terlampir bukti transfer saya.`,
@@ -113,6 +115,7 @@ export default function CreditsPage() {
 
   if (step === "detail" && selectedPkg) {
     const total = selectedPkg.credits + selectedPkg.bonus;
+    const sessions = Math.floor(total / 3);
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 p-6">
         <div className="max-w-lg mx-auto">
@@ -126,7 +129,7 @@ export default function CreditsPage() {
           <div className="bg-white rounded-2xl shadow-md p-8">
             <h2 className="text-2xl font-bold mb-1">Detail Pembayaran</h2>
             <p className="text-slate-500 text-sm mb-8">
-              Paket {selectedPkg.name} — {total} kredit
+              Paket {selectedPkg.name} — {total} kredit ({sessions} sesi)
             </p>
 
             {/* Ringkasan paket */}
@@ -140,7 +143,14 @@ export default function CreditsPage() {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-slate-600">Kredit</span>
                 <span className="font-semibold text-violet-600">
-                  {selectedPkg.credits} + {selectedPkg.bonus} bonus
+                  {selectedPkg.credits} + {selectedPkg.bonus} bonus = {total}{" "}
+                  kredit
+                </span>
+              </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-slate-600">Setara</span>
+                <span className="font-semibold text-blue-600">
+                  {sessions}x tryout + pembahasan AI
                 </span>
               </div>
               <div className="border-t border-violet-100 my-3" />
@@ -151,6 +161,21 @@ export default function CreditsPage() {
                 <span className="text-xl font-bold text-violet-600">
                   {formatPrice(selectedPkg.price)}
                 </span>
+              </div>
+            </div>
+
+            {/* Info biaya kredit */}
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
+              <p className="text-sm font-semibold text-blue-700 mb-2">
+                💡 Biaya penggunaan kredit
+              </p>
+              <div className="flex justify-between text-sm text-blue-700 mb-1">
+                <span>Akses 1 tryout</span>
+                <span className="font-semibold">2 kredit</span>
+              </div>
+              <div className="flex justify-between text-sm text-blue-700">
+                <span>Pembahasan AI</span>
+                <span className="font-semibold">1 kredit</span>
               </div>
             </div>
 
@@ -188,11 +213,11 @@ export default function CreditsPage() {
             </div>
 
             {/* Langkah */}
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
-              <p className="text-sm font-semibold text-blue-700 mb-3">
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-6">
+              <p className="text-sm font-semibold text-slate-700 mb-3">
                 📋 Langkah Pembayaran:
               </p>
-              <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside">
+              <ol className="text-sm text-slate-600 space-y-2 list-decimal list-inside">
                 <li>
                   Transfer tepat{" "}
                   <span className="font-bold">
@@ -209,7 +234,6 @@ export default function CreditsPage() {
               </ol>
             </div>
 
-            {/* Tombol WA */}
             <button
               onClick={handleSendWA}
               className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
@@ -226,6 +250,8 @@ export default function CreditsPage() {
   }
 
   if (step === "confirm") {
+    const total = selectedPkg ? selectedPkg.credits + selectedPkg.bonus : 0;
+    const sessions = Math.floor(total / 3);
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 p-6 flex items-center justify-center">
         <div className="bg-white rounded-2xl shadow-md p-10 max-w-md w-full text-center">
@@ -245,8 +271,13 @@ export default function CreditsPage() {
             <div className="flex justify-between text-sm mb-2">
               <span className="text-slate-500">Total Kredit</span>
               <span className="font-medium text-violet-600">
-                {selectedPkg ? selectedPkg.credits + selectedPkg.bonus : 0}{" "}
-                kredit
+                {total} kredit
+              </span>
+            </div>
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-slate-500">Setara</span>
+              <span className="font-medium text-blue-600">
+                {sessions} sesi tryout + AI
               </span>
             </div>
             <div className="flex justify-between text-sm">
@@ -276,7 +307,7 @@ export default function CreditsPage() {
           <div>
             <h1 className="text-3xl font-bold">Beli Kredit</h1>
             <p className="text-slate-600 mt-2">
-              1 kredit = 1 akses tryout atau 1 pembahasan AI
+              Tryout = 2 kredit • Pembahasan AI = 1 kredit
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -298,26 +329,72 @@ export default function CreditsPage() {
           </div>
         </div>
 
+        {/* Info biaya */}
+        <div className="grid md:grid-cols-3 gap-4 mb-10">
+          <div className="bg-white p-5 rounded-2xl shadow-md flex items-center gap-4">
+            <span className="text-3xl">🎯</span>
+            <div>
+              <p className="font-semibold">Akses Tryout</p>
+              <p className="text-2xl font-bold text-blue-600">
+                2{" "}
+                <span className="text-sm font-normal text-slate-400">
+                  kredit
+                </span>
+              </p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl shadow-md flex items-center gap-4">
+            <span className="text-3xl">✦</span>
+            <div>
+              <p className="font-semibold">Pembahasan AI</p>
+              <p className="text-2xl font-bold text-violet-600">
+                1{" "}
+                <span className="text-sm font-normal text-slate-400">
+                  kredit
+                </span>
+              </p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl shadow-md flex items-center gap-4">
+            <span className="text-3xl">💡</span>
+            <div>
+              <p className="font-semibold">1 Sesi Lengkap</p>
+              <p className="text-2xl font-bold text-green-600">
+                3{" "}
+                <span className="text-sm font-normal text-slate-400">
+                  kredit
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Info banner */}
-        <div className="bg-white p-4 rounded-2xl shadow-md mb-10 flex items-center gap-4">
-          <span className="text-2xl">💡</span>
+        <div className="bg-white p-4 rounded-2xl shadow-md mb-8 flex items-center gap-4">
+          <span className="text-2xl">🏆</span>
           <div>
-            <p className="font-semibold text-slate-700">Cara Pembayaran</p>
+            <p className="font-semibold text-slate-700">
+              Lebih hemat dari beli soal di Shopee!
+            </p>
             <p className="text-sm text-slate-500">
-              Pilih paket → Transfer ke BCA {BANK_INFO.norek} a.n{" "}
-              {BANK_INFO.nama} → Kirim bukti via WhatsApp → Kredit aktif dalam
-              1x24 jam
+              Di Shopee soal saja Rp 10.000 — di sini dapat tryout + pembahasan
+              AI mulai{" "}
+              <span className="font-semibold text-green-600">
+                Rp 6.000/sesi
+              </span>{" "}
+              dengan paket Juara.
             </p>
           </div>
         </div>
 
         {/* Paket */}
         <h2 className="text-2xl font-semibold mb-6">Pilih Paket Kredit</h2>
-
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {PACKAGES.map((pkg) => {
             const total = pkg.credits + pkg.bonus;
             const perCredit = Math.round(pkg.price / total);
+            const sessions = Math.floor(total / 3);
+            const sessionPrice = Math.round(pkg.price / sessions);
 
             return (
               <div
@@ -338,32 +415,51 @@ export default function CreditsPage() {
                 <p className="text-4xl font-bold text-violet-600 mb-1">
                   {pkg.credits}
                 </p>
-                <p className="text-sm text-slate-500 mb-4">kredit utama</p>
+                <p className="text-sm text-slate-500 mb-3">kredit utama</p>
 
-                <div className="bg-violet-50 border border-violet-100 rounded-xl px-3 py-2 mb-5 flex justify-between items-center">
+                <div className="bg-violet-50 border border-violet-100 rounded-xl px-3 py-2 mb-3 flex justify-between items-center">
                   <span className="text-sm text-violet-600 font-medium">
                     + {pkg.bonus} Bonus
                   </span>
                   <span className="text-xs text-slate-400">Total {total}</span>
                 </div>
 
+                <div className="bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 mb-5 flex justify-between items-center">
+                  <span className="text-sm text-blue-600 font-medium">
+                    🎯 {sessions} sesi
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {new Intl.NumberFormat("id-ID", {
+                      style: "currency",
+                      currency: "IDR",
+                      minimumFractionDigits: 0,
+                    }).format(sessionPrice)}
+                    /sesi
+                  </span>
+                </div>
+
                 <p className="text-2xl font-bold text-slate-800 mb-1">
-                  {formatPrice(pkg.price)}
+                  {new Intl.NumberFormat("id-ID", {
+                    style: "currency",
+                    currency: "IDR",
+                    minimumFractionDigits: 0,
+                  }).format(pkg.price)}
                 </p>
                 <p className="text-xs text-slate-400 mb-5">
-                  ~{formatPrice(perCredit)}/kredit
+                  ~
+                  {new Intl.NumberFormat("id-ID", {
+                    style: "currency",
+                    currency: "IDR",
+                    minimumFractionDigits: 0,
+                  }).format(perCredit)}
+                  /kredit
                 </p>
 
                 <button
-                  className={`w-full py-2.5 rounded-xl font-medium text-sm transition ${
-                    pkg.best
-                      ? "bg-violet-600 hover:bg-violet-700 text-white"
-                      : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                  }`}
+                  className={`w-full py-2.5 rounded-xl font-medium text-sm transition ${pkg.best ? "bg-violet-600 hover:bg-violet-700 text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-700"}`}
                 >
                   Pilih Paket →
                 </button>
-
                 <p className="text-center text-xs text-slate-400 mt-3">
                   🔒 Pembayaran Aman
                 </p>

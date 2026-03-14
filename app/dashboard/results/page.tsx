@@ -24,7 +24,6 @@ export default function ResultsPage() {
 
       if (!uid) return;
 
-      // Fetch credits
       const { data: creditData } = await supabase
         .from("user_credits")
         .select("balance")
@@ -32,11 +31,10 @@ export default function ResultsPage() {
         .single();
       setCredits(creditData?.balance || 0);
 
-      // Fetch results
       const { data, error } = await supabase
         .from("results")
         .select(
-          `id, raw_score, final_score, created_at, answers, tryout_id, tryouts (title, duration_minutes)`,
+          `id, raw_score, final_score, created_at, answers, ai_reviewed, ai_content, tryout_id, tryouts (title, duration_minutes)`,
         )
         .eq("user_id", uid)
         .order("created_at", { ascending: false });
@@ -125,21 +123,37 @@ Gunakan bahasa Indonesia yang mudah dipahami. Gunakan emoji yang relevan.`;
 
     setExpandedId(item.id);
 
-    // Sudah ada response sebelumnya
+    // Sudah ada di local state
     if (aiResponses[item.id]) return;
 
+    // 👇 Sudah pernah dibuka & ada konten tersimpan — langsung tampil dari DB
+    if (item.ai_reviewed === true && item.ai_content) {
+      setAiResponses((prev) => ({
+        ...prev,
+        [item.id]: {
+          preview: "",
+          full: item.ai_content,
+          unlocked: true,
+        },
+      }));
+      return;
+    }
+
+    // Belum reviewed — generate preview dulu
     setAiLoading(item.id);
 
     try {
       const fullText = await generateAI(item);
-
-      // Ambil 2-3 kalimat pertama sebagai preview
       const sentences = fullText.split(/(?<=[.!?])\s+/);
       const previewText = sentences.slice(0, 3).join(" ");
 
       setAiResponses((prev) => ({
         ...prev,
-        [item.id]: { preview: previewText, full: fullText, unlocked: false },
+        [item.id]: {
+          preview: previewText,
+          full: fullText,
+          unlocked: false,
+        },
       }));
     } catch (err) {
       setAiResponses((prev) => ({
@@ -163,7 +177,6 @@ Gunakan bahasa Indonesia yang mudah dipahami. Gunakan emoji yang relevan.`;
 
     if (!userId) return;
 
-    // Potong 1 kredit
     const { error: updateError } = await supabase
       .from("user_credits")
       .update({ balance: credits - 1, updated_at: new Date().toISOString() })
@@ -174,7 +187,6 @@ Gunakan bahasa Indonesia yang mudah dipahami. Gunakan emoji yang relevan.`;
       return;
     }
 
-    // Catat transaksi
     await supabase.from("credit_transactions").insert({
       user_id: userId,
       amount: -1,
@@ -182,9 +194,29 @@ Gunakan bahasa Indonesia yang mudah dipahami. Gunakan emoji yang relevan.`;
       description: `Pembahasan AI: ${item.tryouts?.title || "Tryout"}`,
     });
 
+    // Ambil full text dari local state
+    const fullText = aiResponses[item.id]?.full || "";
+
+    // 👇 Simpan ai_content + tandai ai_reviewed ke database
+    await supabase
+      .from("results")
+      .update({
+        ai_reviewed: true,
+        ai_content: fullText,
+      })
+      .eq("id", item.id);
+
     setCredits((prev) => prev - 1);
 
-    // Unlock full response
+    // Update local results state
+    setResults((prev) =>
+      prev.map((r) =>
+        r.id === item.id
+          ? { ...r, ai_reviewed: true, ai_content: fullText }
+          : r,
+      ),
+    );
+
     setAiResponses((prev) => ({
       ...prev,
       [item.id]: { ...prev[item.id], unlocked: true },
@@ -211,7 +243,6 @@ Gunakan bahasa Indonesia yang mudah dipahami. Gunakan emoji yang relevan.`;
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {/* Saldo kredit */}
             <div
               className="px-4 py-2 rounded-xl border border-violet-200 bg-violet-50 cursor-pointer hover:bg-violet-100 transition"
               onClick={() => router.push("/dashboard/credits")}
@@ -281,13 +312,18 @@ Gunakan bahasa Indonesia yang mudah dipahami. Gunakan emoji yang relevan.`;
                       </p>
                       <p className="text-sm text-slate-500 mt-1">
                         📅{" "}
-                        {new Date(item.created_at).toLocaleDateString("id-ID", {
-                          day: "2-digit",
-                          month: "long",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {new Date(item.created_at + "Z").toLocaleString(
+                          "id-ID",
+                          {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false,
+                            timeZone: "Asia/Jakarta",
+                          },
+                        )}
                       </p>
                     </div>
 
@@ -329,7 +365,7 @@ Gunakan bahasa Indonesia yang mudah dipahami. Gunakan emoji yang relevan.`;
                         </p>
                       </div>
 
-                      {/* Tombol pembahasan AI */}
+                      {/* Tombol AI */}
                       <button
                         onClick={() => handlePreview(item)}
                         disabled={isAiLoading}
@@ -344,7 +380,9 @@ Gunakan bahasa Indonesia yang mudah dipahami. Gunakan emoji yang relevan.`;
                           ? "⏳ Memuat..."
                           : isExpanded
                             ? "✦ Tutup"
-                            : "✦ Pembahasan AI"}
+                            : item.ai_reviewed
+                              ? "✦ Lihat Pembahasan"
+                              : "✦ Pembahasan AI"}
                       </button>
                     </div>
                   </div>
@@ -409,15 +447,12 @@ Gunakan bahasa Indonesia yang mudah dipahami. Gunakan emoji yang relevan.`;
                           </div>
                         ) : aiData ? (
                           <div>
-                            {/* Preview text */}
                             <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
                               {aiData.unlocked ? aiData.full : aiData.preview}
                             </p>
 
-                            {/* Blur overlay + unlock button */}
                             {!aiData.unlocked && (
                               <div className="mt-4">
-                                {/* Blur teaser */}
                                 <div
                                   style={{
                                     filter: "blur(4px)",
@@ -428,17 +463,13 @@ Gunakan bahasa Indonesia yang mudah dipahami. Gunakan emoji yang relevan.`;
                                   className="text-sm text-slate-700 leading-relaxed"
                                 >
                                   Lorem ipsum dolor sit amet consectetur
-                                  adipisicing elit. Quisquam voluptates, quod,
-                                  quia, voluptatem quae voluptas quidem natus
-                                  consequatur fugiat doloribus reprehenderit.
-                                  Quisquam voluptates, quod. Pembahasan soal
-                                  nomor 2 memerlukan pemahaman mendalam tentang
-                                  konsep dasar Pancasila sebagai pandangan hidup
-                                  bangsa yang mencakup seluruh aspek kehidupan
+                                  adipisicing elit. Pembahasan soal nomor 2
+                                  memerlukan pemahaman mendalam tentang konsep
+                                  dasar Pancasila sebagai pandangan hidup bangsa
+                                  yang mencakup seluruh aspek kehidupan
                                   berbangsa dan bernegara.
                                 </div>
 
-                                {/* Unlock card */}
                                 <div className="mt-4 bg-white rounded-xl border border-violet-200 p-5 text-center shadow-sm">
                                   <p className="text-2xl mb-2">🔒</p>
                                   <p className="font-semibold text-slate-800 mb-1">
