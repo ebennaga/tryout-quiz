@@ -36,8 +36,11 @@ export async function PATCH(
   return NextResponse.json({ success: true });
 }
 
-export async function DELETE(req: Request, { params }: any) {
-  const { id } = params;
+export async function DELETE(
+  req: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params; // 👈 tambah await
 
   await supabase.from("tryouts").delete().eq("id", id);
 

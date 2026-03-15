@@ -12,7 +12,7 @@ export default function TryoutPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [timeLeft, setTimeLeft] = useState(0);
-  const [duration, setDuration] = useState(90);
+  const [duration, setDuration] = useState(100);
   const [page, setPage] = useState(0);
   const [score, setScore] = useState<any>(null);
   const perPage = 20;
@@ -96,7 +96,7 @@ export default function TryoutPage() {
         .eq("id", id)
         .single();
 
-      const durasi = tryoutData?.duration_minutes || 90;
+      const durasi = tryoutData?.duration_minutes || 100;
       setDuration(durasi);
 
       // 🔥 Ambil end time berdasarkan id yang VALID
@@ -139,7 +139,18 @@ export default function TryoutPage() {
         .eq("tryout_id", id)
         .order("created_at", { ascending: true });
 
-      if (data) setQuestions(data);
+      if (data) {
+        // 👇 Sort options A-B-C-D-E untuk setiap soal
+        const sorted = data.map((q: any) => ({
+          ...q,
+          options: q.options.sort((a: any, b: any) => {
+            const labelA = a.option_label || "";
+            const labelB = b.option_label || "";
+            return labelA.localeCompare(labelB);
+          }),
+        }));
+        setQuestions(sorted);
+      }
     };
 
     fetchData();
@@ -369,7 +380,7 @@ export default function TryoutPage() {
             <h2 className="text-2xl font-bold mb-4">Hasil Ujian</h2>
 
             <p className="text-lg">
-              Skor Mentah : <b>{score.raw}</b>
+              Skor TKD : <b>{score.raw}</b>
             </p>
 
             <p className="text-lg">
